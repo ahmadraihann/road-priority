@@ -3,6 +3,7 @@ import { createBrowserRouter, type RouteObject } from "react-router";
 
 import { lazyLoad } from "@/hooks/lazy-load";
 import { DefaultLayout } from "@/components/layouts/default-layout";
+import { BlankLayout } from "@/components/layouts/blank-layout";
 import { NotFoundError } from "@/components/404";
 import DashboardPage from "@/modules/dashboard/views";
 import InputFormPage from "@/modules/analysis/views/form";
@@ -10,6 +11,7 @@ import ReviewDataPage from "@/modules/analysis/views/list";
 import CalculatePage from "@/modules/analysis/views/calculate";
 import ResultsPage from "@/modules/analysis/views/results";
 import MapPage from "@/modules/analysis/views/map";
+import DetailPage from "@/modules/analysis/views/detail";
 
 const RedirectPage = lazyLoad(() => import("@/modules/redirect"));
 
@@ -44,7 +46,7 @@ const defaultLayoutRoutes: RouteObject[] = [
     element: <InputFormPage />,
   },
   {
-    path: "/form/:id",
+    path: "/form:id",
     element: <InputFormPage />,
   },
   {
@@ -60,6 +62,14 @@ const defaultLayoutRoutes: RouteObject[] = [
     element: <ResultsPage />,
   },
   {
+    path: "/detail",
+    element: <DetailPage />,
+  },
+];
+
+// Blank layout routes
+const blankLayoutRoutes: RouteObject[] = [
+  {
     path: "/map",
     element: <MapPage />,
   },
@@ -70,6 +80,7 @@ export const router = createBrowserRouter([
   {
     children: [
       createLayoutRoute(DefaultLayout, defaultLayoutRoutes),
+      createLayoutRoute(BlankLayout, blankLayoutRoutes),
 
       {
         path: "*",

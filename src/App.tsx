@@ -1,3 +1,4 @@
+// src/App.tsx
 import { RouterProvider } from "react-router";
 import { NuqsAdapter } from "nuqs/adapters/react";
 import { Toaster } from "sonner";
