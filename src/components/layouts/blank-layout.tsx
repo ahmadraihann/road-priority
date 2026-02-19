@@ -1,3 +1,4 @@
+// src/components/layouts/blank-layout.tsx
 import { Outlet } from "react-router";
 
 import { LayoutsProvider } from "@/provider/layouts-provider";
