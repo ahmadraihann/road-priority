@@ -1,59 +1,48 @@
 // src/modules/analysis/helpers/index.ts
-import type { RoadData } from "@/modules/analysis/types";
-
-// Bobot kriteria (sudah dinormalisasi, total = 1.0)
-export const WEIGHTS = {
-  pci: 0.3, // C1: Kondisi Fisik (Cost)
-  volumeLaluLintas: 0.25, // C2: Volume Lalu Lintas (Benefit)
-  tingkatKeselamatan: 0.15, // C3: Tingkat Keselamatan (Benefit)
-  estimasiBiaya: 0.12, // C4: Estimasi Biaya (Cost)
-  fungsiJaringan: 0.1, // C5: Fungsi Jaringan (Cost)
-  dampakPenduduk: 0.08, // C6: Dampak Penduduk (Benefit)
-};
-
-// Tipe kriteria: Cost atau Benefit
-export const CRITERIA_TYPES = {
-  pci: "cost",
-  volumeLaluLintas: "benefit",
-  tingkatKeselamatan: "benefit",
-  estimasiBiaya: "cost",
-  fungsiJaringan: "cost",
-  dampakPenduduk: "benefit",
-};
+import type { DbCriteria, DbRoad } from "@/lib/supabase";
 
 export interface TopsisResult {
-  id: string;
+  id: string; // road UUID (from roads table)
+  roadId: string; // legacy road_id
   namaJalan: string;
   score: number;
   rank: number;
   distanceToIdealPositive: number;
   distanceToIdealNegative: number;
   category: "Prioritas Tinggi" | "Prioritas Sedang" | "Prioritas Rendah";
-  criteria: {
-    pci: string;
-    volumeLaluLintas: string;
-    tingkatKeselamatan: string;
-    estimasiBiaya: string;
-    fungsiJaringan: string;
-    dampakPenduduk: string;
-    polyline?: string; // Added for GIS map visualization
-  };
+  criteriaValues: Record<string, string>;
+  polyline?: string;
 }
 
-export function createDecisionMatrix(roads: RoadData[]): number[][] {
-  return roads.map((road) => [
-    parseFloat(road.pci),
-    parseFloat(road.volumeLaluLintas),
-    parseFloat(road.tingkatKeselamatan),
-    parseFloat(road.estimasiBiaya),
-    parseFloat(road.fungsiJaringan),
-    parseFloat(road.dampakPenduduk),
-  ]);
+export interface CalculationDetails {
+  decisionMatrix: number[][];
+  normalizedMatrix: number[][];
+  weightedMatrix: number[][];
+  idealPositive: number[];
+  idealNegative: number[];
+  distancesPositive: number[];
+  distancesNegative: number[];
+  scores: number[];
 }
 
+/**
+ * Create decision matrix from roads and dynamic criteria
+ */
+export function createDecisionMatrix(
+  roads: DbRoad[],
+  criteria: DbCriteria[]
+): number[][] {
+  return roads.map((road) =>
+    criteria.map((c) => parseFloat(road.criteria_values[c.key] || "0"))
+  );
+}
+
+/**
+ * Normalize matrix using vector normalization
+ */
 export function normalizeMatrix(matrix: number[][]): number[][] {
+  if (matrix.length === 0) return [];
   const numCriteria = matrix[0].length;
-  const normalized: number[][] = [];
   const sumOfSquares = new Array(numCriteria).fill(0);
 
   for (let i = 0; i < matrix.length; i++) {
@@ -64,49 +53,41 @@ export function normalizeMatrix(matrix: number[][]): number[][] {
 
   const sqrtSumOfSquares = sumOfSquares.map((sum) => Math.sqrt(sum));
 
-  for (let i = 0; i < matrix.length; i++) {
-    const row: number[] = [];
-    for (let j = 0; j < numCriteria; j++) {
-      row.push(matrix[i][j] / sqrtSumOfSquares[j]);
-    }
-    normalized.push(row);
-  }
-
-  return normalized;
+  return matrix.map((row) =>
+    row.map((value, j) =>
+      sqrtSumOfSquares[j] === 0 ? 0 : value / sqrtSumOfSquares[j]
+    )
+  );
 }
 
-export function createWeightedMatrix(normalizedMatrix: number[][]): number[][] {
-  const weights = [
-    WEIGHTS.pci,
-    WEIGHTS.volumeLaluLintas,
-    WEIGHTS.tingkatKeselamatan,
-    WEIGHTS.estimasiBiaya,
-    WEIGHTS.fungsiJaringan,
-    WEIGHTS.dampakPenduduk,
-  ];
-
+/**
+ * Apply weights from dynamic criteria
+ */
+export function createWeightedMatrix(
+  normalizedMatrix: number[][],
+  criteria: DbCriteria[]
+): number[][] {
+  const weights = criteria.map((c) => Number(c.weight));
   return normalizedMatrix.map((row) =>
     row.map((value, index) => value * weights[index])
   );
 }
 
-export function findIdealSolutions(weightedMatrix: number[][]) {
+/**
+ * Find ideal positive and negative solutions
+ */
+export function findIdealSolutions(
+  weightedMatrix: number[][],
+  criteria: DbCriteria[]
+) {
+  if (weightedMatrix.length === 0) return { idealPositive: [], idealNegative: [] };
   const numCriteria = weightedMatrix[0].length;
   const idealPositive: number[] = [];
   const idealNegative: number[] = [];
 
-  const criteriaTypesArray = [
-    CRITERIA_TYPES.pci,
-    CRITERIA_TYPES.volumeLaluLintas,
-    CRITERIA_TYPES.tingkatKeselamatan,
-    CRITERIA_TYPES.estimasiBiaya,
-    CRITERIA_TYPES.fungsiJaringan,
-    CRITERIA_TYPES.dampakPenduduk,
-  ];
-
   for (let j = 0; j < numCriteria; j++) {
     const column = weightedMatrix.map((row) => row[j]);
-    const type = criteriaTypesArray[j];
+    const type = criteria[j].type;
 
     if (type === "benefit") {
       idealPositive.push(Math.max(...column));
@@ -120,6 +101,9 @@ export function findIdealSolutions(weightedMatrix: number[][]) {
   return { idealPositive, idealNegative };
 }
 
+/**
+ * Calculate distances to ideal solutions
+ */
 export function calculateDistances(
   weightedMatrix: number[][],
   idealPositive: number[],
@@ -144,54 +128,59 @@ export function calculateDistances(
   return { distancesPositive, distancesNegative };
 }
 
+/**
+ * Calculate preference scores (V values)
+ */
 export function calculatePreferenceScores(
   distancesPositive: number[],
   distancesNegative: number[]
 ): number[] {
   return distancesPositive.map((dPos, index) => {
     const dNeg = distancesNegative[index];
-    return dNeg / (dPos + dNeg);
+    const total = dPos + dNeg;
+    return total === 0 ? 0 : dNeg / total;
   });
 }
 
-export function calculateTopsis(roads: RoadData[]): TopsisResult[] {
-  const decisionMatrix = createDecisionMatrix(roads);
+/**
+ * Main TOPSIS calculation - now accepts dynamic criteria
+ */
+export function calculateTopsis(
+  roads: DbRoad[],
+  criteria: DbCriteria[]
+): TopsisResult[] {
+  if (roads.length === 0 || criteria.length === 0) return [];
+
+  const decisionMatrix = createDecisionMatrix(roads, criteria);
   const normalizedMatrix = normalizeMatrix(decisionMatrix);
-  const weightedMatrix = createWeightedMatrix(normalizedMatrix);
-  const { idealPositive, idealNegative } = findIdealSolutions(weightedMatrix);
+  const weightedMatrix = createWeightedMatrix(normalizedMatrix, criteria);
+  const { idealPositive, idealNegative } = findIdealSolutions(
+    weightedMatrix,
+    criteria
+  );
   const { distancesPositive, distancesNegative } = calculateDistances(
     weightedMatrix,
     idealPositive,
     idealNegative
   );
-  const scores = calculatePreferenceScores(
-    distancesPositive,
-    distancesNegative
-  );
+  const scores = calculatePreferenceScores(distancesPositive, distancesNegative);
 
   const results: TopsisResult[] = roads.map((road, index) => ({
     id: road.id,
-    namaJalan: road.namaJalan,
+    roadId: road.road_id,
+    namaJalan: road.nama_jalan,
     score: scores[index],
     distanceToIdealPositive: distancesPositive[index],
     distanceToIdealNegative: distancesNegative[index],
     rank: 0,
     category: "Prioritas Sedang",
-    criteria: {
-      pci: road.pci,
-      volumeLaluLintas: road.volumeLaluLintas,
-      tingkatKeselamatan: road.tingkatKeselamatan,
-      estimasiBiaya: road.estimasiBiaya,
-      fungsiJaringan: road.fungsiJaringan,
-      dampakPenduduk: road.dampakPenduduk,
-      polyline: road.polyline, // Include polyline for map
-    },
+    criteriaValues: road.criteria_values,
+    polyline: road.polyline || undefined,
   }));
 
   results.sort((a, b) => b.score - a.score);
   results.forEach((result, index) => {
     result.rank = index + 1;
-
     if (result.score >= 0.7) {
       result.category = "Prioritas Tinggi";
     } else if (result.score >= 0.5) {
@@ -204,6 +193,86 @@ export function calculateTopsis(roads: RoadData[]): TopsisResult[] {
   return results;
 }
 
+/**
+ * TOPSIS with full calculation details - for detail page
+ */
+export function calculateTopsisWithDetails(
+  roads: DbRoad[],
+  criteria: DbCriteria[]
+): {
+  results: TopsisResult[];
+  details: CalculationDetails;
+} {
+  if (roads.length === 0 || criteria.length === 0) {
+    return {
+      results: [],
+      details: {
+        decisionMatrix: [],
+        normalizedMatrix: [],
+        weightedMatrix: [],
+        idealPositive: [],
+        idealNegative: [],
+        distancesPositive: [],
+        distancesNegative: [],
+        scores: [],
+      },
+    };
+  }
+
+  const decisionMatrix = createDecisionMatrix(roads, criteria);
+  const normalizedMatrix = normalizeMatrix(decisionMatrix);
+  const weightedMatrix = createWeightedMatrix(normalizedMatrix, criteria);
+  const { idealPositive, idealNegative } = findIdealSolutions(
+    weightedMatrix,
+    criteria
+  );
+  const { distancesPositive, distancesNegative } = calculateDistances(
+    weightedMatrix,
+    idealPositive,
+    idealNegative
+  );
+  const scores = calculatePreferenceScores(distancesPositive, distancesNegative);
+
+  const results: TopsisResult[] = roads.map((road, index) => ({
+    id: road.id,
+    roadId: road.road_id,
+    namaJalan: road.nama_jalan,
+    score: scores[index],
+    distanceToIdealPositive: distancesPositive[index],
+    distanceToIdealNegative: distancesNegative[index],
+    rank: 0,
+    category: "Prioritas Sedang",
+    criteriaValues: road.criteria_values,
+    polyline: road.polyline || undefined,
+  }));
+
+  results.sort((a, b) => b.score - a.score);
+  results.forEach((result, index) => {
+    result.rank = index + 1;
+    if (result.score >= 0.7) {
+      result.category = "Prioritas Tinggi";
+    } else if (result.score >= 0.5) {
+      result.category = "Prioritas Sedang";
+    } else {
+      result.category = "Prioritas Rendah";
+    }
+  });
+
+  const details: CalculationDetails = {
+    decisionMatrix,
+    normalizedMatrix,
+    weightedMatrix,
+    idealPositive,
+    idealNegative,
+    distancesPositive,
+    distancesNegative,
+    scores,
+  };
+
+  return { results, details };
+}
+
+// Helper utilities
 export function getCategoryColor(category: string): string {
   switch (category) {
     case "Prioritas Tinggi":
@@ -232,78 +301,4 @@ export function getRankMedal(rank: number): string {
 
 export function formatScore(score: number): string {
   return (score * 100).toFixed(2) + "%";
-}
-
-export interface CalculationDetails {
-  decisionMatrix: number[][];
-  normalizedMatrix: number[][];
-  weightedMatrix: number[][];
-  idealPositive: number[];
-  idealNegative: number[];
-  distancesPositive: number[];
-  distancesNegative: number[];
-  scores: number[];
-}
-
-export function calculateTopsisWithDetails(roads: RoadData[]): {
-  results: TopsisResult[];
-  details: CalculationDetails;
-} {
-  const decisionMatrix = createDecisionMatrix(roads);
-  const normalizedMatrix = normalizeMatrix(decisionMatrix);
-  const weightedMatrix = createWeightedMatrix(normalizedMatrix);
-  const { idealPositive, idealNegative } = findIdealSolutions(weightedMatrix);
-  const { distancesPositive, distancesNegative } = calculateDistances(
-    weightedMatrix,
-    idealPositive,
-    idealNegative
-  );
-  const scores = calculatePreferenceScores(
-    distancesPositive,
-    distancesNegative
-  );
-
-  const results: TopsisResult[] = roads.map((road, index) => ({
-    id: road.id,
-    namaJalan: road.namaJalan,
-    score: scores[index],
-    distanceToIdealPositive: distancesPositive[index],
-    distanceToIdealNegative: distancesNegative[index],
-    rank: 0,
-    category: "Prioritas Sedang",
-    criteria: {
-      pci: road.pci,
-      volumeLaluLintas: road.volumeLaluLintas,
-      tingkatKeselamatan: road.tingkatKeselamatan,
-      estimasiBiaya: road.estimasiBiaya,
-      fungsiJaringan: road.fungsiJaringan,
-      dampakPenduduk: road.dampakPenduduk,
-      polyline: road.polyline, // Include polyline for map
-    },
-  }));
-
-  results.sort((a, b) => b.score - a.score);
-  results.forEach((result, index) => {
-    result.rank = index + 1;
-    if (result.score >= 0.7) {
-      result.category = "Prioritas Tinggi";
-    } else if (result.score >= 0.5) {
-      result.category = "Prioritas Sedang";
-    } else {
-      result.category = "Prioritas Rendah";
-    }
-  });
-
-  const details: CalculationDetails = {
-    decisionMatrix,
-    normalizedMatrix,
-    weightedMatrix,
-    idealPositive,
-    idealNegative,
-    distancesPositive,
-    distancesNegative,
-    scores,
-  };
-
-  return { results, details };
 }

@@ -12,6 +12,7 @@ import CalculatePage from "@/modules/analysis/views/calculate";
 import ResultsPage from "@/modules/analysis/views/results";
 import MapPage from "@/modules/analysis/views/map";
 import DetailPage from "@/modules/analysis/views/detail";
+import CriteriaManagePage from "@/modules/criteria/views/manage";
 
 const RedirectPage = lazyLoad(() => import("@/modules/redirect"));
 
@@ -64,6 +65,10 @@ const defaultLayoutRoutes: RouteObject[] = [
   {
     path: "/detail",
     element: <DetailPage />,
+  },
+  {
+    path: "/criteria",
+    element: <CriteriaManagePage />,
   },
 ];
 

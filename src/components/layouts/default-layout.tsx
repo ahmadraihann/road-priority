@@ -1,6 +1,6 @@
 // src/components/layouts/default-layout.tsx
 import { Outlet, useNavigate, useLocation, Link } from "react-router";
-import { Map, ListChecks, Plus } from "lucide-react";
+import { Map, ListChecks, Plus, Settings2 } from "lucide-react";
 
 import { LayoutsProvider } from "@/provider/layouts-provider";
 import { NavigationProgress } from "../navigation-progress";
@@ -13,6 +13,7 @@ type DefaultLayoutProps = {
 const navItems = [
   { label: "Data Jalan", href: "/review", icon: ListChecks },
   { label: "Tambah Data", href: "/form", icon: Plus },
+  { label: "Kriteria", href: "/criteria", icon: Settings2 },
 ];
 
 export function DefaultLayout({ children }: DefaultLayoutProps) {
