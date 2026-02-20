@@ -392,7 +392,7 @@ const InputFormPage: React.FC = () => {
                     <div className="mt-2 flex items-start gap-2">
                       <div className="w-1 h-4 bg-linear-to-b from-amber-500 to-yellow-500 rounded-full shrink-0 mt-0.5"></div>
                       <p className="text-xs text-slate-500">
-                        Cost • Bobot 15% • Semakin tinggi semakin prioritas
+                        Benefit • Bobot 15% • Semakin tinggi semakin prioritas
                       </p>
                     </div>
                     {errors.tingkatKeselamatan && isSubmitted && (
@@ -464,14 +464,14 @@ const InputFormPage: React.FC = () => {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="1">
-                                Jalan Arteri (4)
+                                Jalan Arteri (1)
                               </SelectItem>
                               <SelectItem value="2">
-                                Jalan Kolektor (3)
+                                Jalan Kolektor (2)
                               </SelectItem>
-                              <SelectItem value="3">Jalan Lokal (2)</SelectItem>
+                              <SelectItem value="3">Jalan Lokal (3)</SelectItem>
                               <SelectItem value="4">
-                                Jalan Lingkungan (1)
+                                Jalan Lingkungan (4)
                               </SelectItem>
                             </SelectContent>
                           </Select>

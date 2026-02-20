@@ -155,7 +155,7 @@ export default function DashboardPage() {
             {
               name: "Tingkat Keselamatan",
               weight: "15%",
-              type: "Cost",
+              type: "Benefit",
               color: "from-amber-500 to-yellow-500",
             },
             {

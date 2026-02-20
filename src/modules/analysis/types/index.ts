@@ -39,7 +39,7 @@ export const CRITERIA: CriteriaInfo[] = [
   {
     code: "C3",
     name: "Keselamatan",
-    type: "Cost",
+    type: "Benefit",
     weight: "15%",
     field: "tingkatKeselamatan",
   },

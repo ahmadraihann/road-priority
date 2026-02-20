@@ -26,7 +26,7 @@ export const RoadFormSchema = z.object({
     .string()
     .min(1, { message: "Volume lalu lintas wajib diisi" })
     .regex(/^\d+$/, { message: "Volume lalu lintas harus berupa angka bulat" }),
-  // C3: Tingkat Keselamatan - Cost
+  // C3: Tingkat Keselamatan - Benefit
   tingkatKeselamatan: z
     .string()
     .min(1, { message: "Tingkat keselamatan wajib diisi" })

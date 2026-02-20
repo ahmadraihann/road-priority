@@ -5,7 +5,7 @@ import type { RoadData } from "@/modules/analysis/types";
 export const WEIGHTS = {
   pci: 0.3, // C1: Kondisi Fisik (Cost)
   volumeLaluLintas: 0.25, // C2: Volume Lalu Lintas (Benefit)
-  tingkatKeselamatan: 0.15, // C3: Tingkat Keselamatan (Cost)
+  tingkatKeselamatan: 0.15, // C3: Tingkat Keselamatan (Benefit)
   estimasiBiaya: 0.12, // C4: Estimasi Biaya (Cost)
   fungsiJaringan: 0.1, // C5: Fungsi Jaringan (Cost)
   dampakPenduduk: 0.08, // C6: Dampak Penduduk (Benefit)
@@ -15,7 +15,7 @@ export const WEIGHTS = {
 export const CRITERIA_TYPES = {
   pci: "cost",
   volumeLaluLintas: "benefit",
-  tingkatKeselamatan: "cost",
+  tingkatKeselamatan: "benefit",
   estimasiBiaya: "cost",
   fungsiJaringan: "cost",
   dampakPenduduk: "benefit",

@@ -244,8 +244,8 @@ const DetailPage: React.FC = () => {
                   style={{ height: "100%", width: "100%" }}
                 >
                   <TileLayer
-                    attribution="© OpenStreetMap contributors"
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; OpenStreetMap & CartoDB'
+                    url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
                   />
 
                   <MapBounds bounds={polylineCoords} />
@@ -391,7 +391,7 @@ const DetailPage: React.FC = () => {
                       C3 Tingkat Keselamatan
                     </div>
                     <div className="text-xs text-slate-500">
-                      Cost • Bobot {WEIGHTS.tingkatKeselamatan * 100}%
+                      Benefit • Bobot {WEIGHTS.tingkatKeselamatan * 100}%
                     </div>
                   </div>
                   <div className="text-right pr-4">
