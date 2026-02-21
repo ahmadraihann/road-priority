@@ -97,7 +97,7 @@ const CalculatePage: React.FC = () => {
     }, totalDuration / 100);
 
     return () => clearInterval(interval);
-  }, [roads, criteria, navigate, isLoading]);
+  }, [roads, criteria, navigate, isLoading, saveResultsMutation]);
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-3 sm:p-4 md:p-6">
@@ -147,21 +147,33 @@ const CalculatePage: React.FC = () => {
                       : "bg-slate-50 border-2 border-slate-200 opacity-60"
                   }`}
                 >
-                  <div className={`shrink-0 w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center ${
-                    index < currentStep ? "bg-green-500" : index === currentStep ? "bg-indigo-600" : "bg-slate-300"
-                  }`}>
+                  <div
+                    className={`shrink-0 w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center ${
+                      index < currentStep
+                        ? "bg-green-500"
+                        : index === currentStep
+                        ? "bg-indigo-600"
+                        : "bg-slate-300"
+                    }`}
+                  >
                     {index < currentStep ? (
                       <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                     ) : index === currentStep ? (
                       <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-spin" />
                     ) : (
-                      <span className="text-xs sm:text-sm font-bold text-white">{index + 1}</span>
+                      <span className="text-xs sm:text-sm font-bold text-white">
+                        {index + 1}
+                      </span>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-xs sm:text-sm md:text-base font-semibold leading-tight ${
-                      index <= currentStep ? "text-slate-900" : "text-slate-500"
-                    }`}>
+                    <p
+                      className={`text-xs sm:text-sm md:text-base font-semibold leading-tight ${
+                        index <= currentStep
+                          ? "text-slate-900"
+                          : "text-slate-500"
+                      }`}
+                    >
                       {step.label}
                     </p>
                   </div>
@@ -191,7 +203,8 @@ const CalculatePage: React.FC = () => {
                   TOPSIS (Technique for Order of Preference by Similarity to
                   Ideal Solution) menentukan alternatif terbaik berdasarkan
                   jarak terdekat dari solusi ideal positif dan terjauh dari
-                  solusi ideal negatif. Menggunakan {criteria.length} kriteria dinamis.
+                  solusi ideal negatif. Menggunakan {criteria.length} kriteria
+                  dinamis.
                 </p>
               </div>
             </div>

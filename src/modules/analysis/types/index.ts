@@ -11,3 +11,16 @@ export const FungsiJaringanLabels: Record<string, string> = {
   "3": "Kolektor",
   "4": "Lokal",
 };
+
+export interface RoadData {
+  id: string;
+  namaJalan: string;
+  polyline?: string;
+  pci: string;
+  volumeLaluLintas: string;
+  tingkatKeselamatan: string;
+  estimasiBiaya: string;
+  fungsiJaringan: string;
+  dampakPenduduk: string;
+  createdAt: string;
+}
